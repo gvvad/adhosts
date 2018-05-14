@@ -1,0 +1,29 @@
+#server.modules = ( "mod_rewrite" )
+
+server.username             = "http"
+server.groupname            = "www-data"
+
+server.bind                 = "{ip}"
+server.upload-dirs          = ( "/tmp" )
+#server.errorlog             = "/var/log/lighttpd/error.log"
+server.pid-file             = "{pidf}"
+
+server.document-root = "{www}"
+
+$SERVER["socket"] == ":443" {
+	ssl.engine = "enable"
+	ssl.pemfile = "{pem}"
+	url.redirect = "http://{ip}/index.html"
+}
+
+#url.rewrite-once	= (".*" => "/index.html")
+
+server.error-handler-404 = "/index.html"
+
+index-file.names            = ( "index.php", "index.html",
+                                "index.htm", "default.htm",
+                                "index.lighttpd.html" )
+
+static-file.exclude-extensions = ( ".php", ".pl", ".fcgi" )
+
+include       "/etc/lighttpd/mime.conf"
