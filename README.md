@@ -5,16 +5,18 @@ Block malware and not "friendly" sites on your local network.
 
 ### Using:
 
-`update` - update hosts file
+`sh ./adhosts.sh update` - update hosts file
 
-`start` - start http server
+`sh ./adhosts.sh start` - start http server
 
-* Add addition hosts file `/etc/config/dhcp` / `config dnsmasq`
-    * `list addnhosts '/path/adhosts/hosts'`
-* Set execute flags `chmod 777 ./adhosts.sh`
-* Set [cron](https://wiki.openwrt.org/doc/howto/cron) and [startup (/etc/rc.local)](https://wiki.openwrt.org/doc/techref/process.boot) tasks:
-    * `* * * */1 * sh /path/adhosts/adhosts.sh update`
-    * `sh /path/adhosts/adhosts.sh start`
+* Add addition hosts file to config: `/etc/config/dhcp` => [`config dnsmasq`]
+    * `list addnhosts '/path/to/adhosts/hosts'`
+* Set execute flags
+    * `chmod 777 ./adhosts.sh`
+* Set [cron](https://wiki.openwrt.org/doc/howto/cron) task
+    * `* * * */1 * sh /path/to/adhosts/adhosts.sh update`
+* Set startup [(/etc/rc.local)](https://wiki.openwrt.org/doc/techref/process.boot) task:
+    * `sh /path/to/adhosts/adhosts.sh start`
 
 ### Hosts files:
 [StevenBlack/hosts](https://github.com/StevenBlack/hosts)
