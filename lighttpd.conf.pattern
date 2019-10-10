@@ -1,18 +1,16 @@
-#server.modules = ( "mod_rewrite" )
+server.modules = ( "mod_rewrite", "mod_openssl")
 
 server.username             = "http"
 server.groupname            = "www-data"
 
 server.bind                 = "{ip}"
 server.upload-dirs          = ( "/tmp" )
-#server.errorlog             = "/var/log/lighttpd/error.log"
 server.pid-file             = "{pidf}"
-
-server.document-root = "{www}"
+server.document-root		= "{www}"
 
 $SERVER["socket"] == ":443" {
 	ssl.engine = "enable"
-	ssl.pemfile = "{pem}"
+	ssl.pemfile = "{keyca}"
 	url.redirect = "http://{ip}/index.html"
 }
 

@@ -1,9 +1,12 @@
 #!/bin/sh
 HTTP_DAEMON="lighttpd"
+DAEMON_CMD="lighttpd -f"
 BIND_IP="192.168.1.2"
 FILE_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-FULLPATH="$(pwd)/$0"
-DIR="$(echo $FULLPATH | sed 's@\(.*\)/.*@\1@')"
+
+my_dir="$(dirname "$0")"
+cd "$my_dir"
+DIR="$(pwd)"
 
 # download and prepare hosts file
 # and restart dnsmasq daemon
@@ -11,24 +14,26 @@ update() {
     rm hosts
     wget $FILE_URL --no-check-certificate -O hosts
     echo "parsing..."
-    sed -i -e "/\slocalhost$/d;/[:#]/d;/^$/d;s/^[0-9.]*\s/$BIND_IP /" "$DIR/hosts"
+    sed -i -e "/\slocalhost$/d;/[:#]/d;/^$/d;s/^[0-9.]*\s/$BIND_IP /" "./hosts"
     /etc/init.d/dnsmasq restart
 }
 
 # add ip addres to br-lan and start http server
 start_http() {
     ip address add $BIND_IP dev br-lan
-    sed -e "s@{www}@$DIR/www@;s@{pem}@$DIR/keyca.pem@;s@{ca}@$DIR/ca.crt@;s@{pidf}@$DIR/lighttpd.pid@;s@{ip}@$BIND_IP@" "$DIR/lighttpd.conf.pattern" > "$DIR/lighttpd.conf"
-    $HTTP_DAEMON -f "$DIR/lighttpd.conf"&
+    sed -e "s@{www}@$DIR/www@;s@{key}@$DIR/key.pem@;s@{ca}@$DIR/ca.crt@;s@{keyca}@$DIR/keyca.pem@;s@{pidf}@$DIR/$HTTP_DAEMON.pid@;s@{ip}@$BIND_IP@" "$DIR/$HTTP_DAEMON.conf.pattern" > "$DIR/$HTTP_DAEMON.conf"
+    $DAEMON_CMD "$DIR/$HTTP_DAEMON.conf"
 }
 
 # stop http server
 stop_http() {
-    if [ -f "$DIR/lighttpd.pid" ]
+    if [ -f "$DIR/$HTTP_DAEMON.pid" ]
     then
-        pid=$(cat "$DIR/lighttpd.pid")
-        kill -9 $pid
-        rm "$DIR/lighttpd.pid"
+        pid=$(cat "$DIR/$HTTP_DAEMON.pid")
+        kill -2 $pid
+        rm "$DIR/$HTTP_DAEMON.pid"
+    else
+        echo "PID file $DIR/$HTTP_DAEMON.pid not found! Server was not stopped."
     fi
 }
 
@@ -39,7 +44,6 @@ fi
 
 if [ "$1" = "start" ]
 then
-    stop_http
     start_http
     if [ ! -f "$DIR/hosts" ]
     then
