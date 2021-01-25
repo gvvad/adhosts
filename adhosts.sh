@@ -3,6 +3,8 @@ HTTP_DAEMON="lighttpd"
 DAEMON_CMD="lighttpd -f"
 BIND_IP="192.168.1.2"
 FILE_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+HOSTS_FILE="hosts"
+EXCLUDE_FILE="exclude"
 
 my_dir="$(dirname "$0")"
 cd "$my_dir"
@@ -11,10 +13,20 @@ DIR="$(pwd)"
 # download and prepare hosts file
 # and restart dnsmasq daemon
 update() {
-    rm hosts
-    wget $FILE_URL --no-check-certificate -O hosts
-    echo "parsing..."
-    sed -i -e "/\slocalhost$/d;/[:#]/d;/^$/d;s/^[0-9.]*\s/$BIND_IP /" "./hosts"
+    rm "$HOSTS_FILE"
+    wget $FILE_URL --no-check-certificate -O "$HOSTS_FILE"
+    if [ -f "$EXCLUDE_FILE" ]
+    then
+        echo "Excluding:"
+        while IFS= read -r line
+        do
+            echo "$line"
+            sed -E -i "/$line/d" "$HOSTS_FILE"
+        done < "exclude"
+    fi
+    
+    echo "Preparing..."
+    sed -i -e "s/^[0-9.]*\s/$BIND_IP /" "$HOSTS_FILE"
     /etc/init.d/dnsmasq restart
 }
 
@@ -45,10 +57,6 @@ fi
 if [ "$1" = "start" ]
 then
     start_http
-    if [ ! -f "$DIR/hosts" ]
-    then
-        update
-    fi
 fi
 
 if [ "$1" = "stop" ]
