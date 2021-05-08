@@ -2,9 +2,10 @@
 HTTP_DAEMON="lighttpd"
 DAEMON_CMD="lighttpd -f"
 BIND_IP="192.168.1.2"
-FILE_URL="https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
 HOSTS_FILE="hosts"
+SOURCE_FILE="source"
 EXCLUDE_FILE="exclude"
+TMP_FILE="_tmp"
 
 my_dir="$(dirname "$0")"
 cd "$my_dir"
@@ -13,20 +14,39 @@ DIR="$(pwd)"
 # download and prepare hosts file
 # and restart dnsmasq daemon
 update() {
-    rm "$HOSTS_FILE"
-    wget $FILE_URL --no-check-certificate -O "$HOSTS_FILE"
-    if [ -f "$EXCLUDE_FILE" ]
-    then
-        echo "Excluding:"
-        while IFS= read -r line
-        do
-            echo "$line"
-            sed -E -i "/$line/d" "$HOSTS_FILE"
-        done < "exclude"
-    fi
+    rm -f "$HOSTS_FILE"
+    touch "$HOSTS_FILE"
+
+    while IFS= read -r url
+    do
+        echo "Downloading: $url"
+        wget -nv --no-check-certificate "$url" -O ""$TMP_FILE"0"
+        echo "Done."
+
+        if [ -f "$EXCLUDE_FILE" ]
+        then
+            echo "Excluding..."
+            grep -Ev -f "$EXCLUDE_FILE" ""$TMP_FILE"0" > ""$TMP_FILE"1"
+            rm ""$TMP_FILE"0"
+            echo "Done."
+        else
+            mv -f ""$TMP_FILE"0" ""$TMP_FILE"1"
+        fi
+        
+        echo "Preparing..."
+        sed -i -e "s/^[0-9.]*\s/$BIND_IP /" ""$TMP_FILE"1"
+        echo "Done."
+        
+        echo "Merging..."
+        grep -Fxv -f "$HOSTS_FILE" ""$TMP_FILE"1" > ""$TMP_FILE"2"
+        rm ""$TMP_FILE"1"
+
+        cat ""$TMP_FILE"2" >> "$HOSTS_FILE"
+        rm ""$TMP_FILE"2"
+        echo "Done."
+
+    done < "$SOURCE_FILE"
     
-    echo "Preparing..."
-    sed -i -e "s/^[0-9.]*\s/$BIND_IP /" "$HOSTS_FILE"
     /etc/init.d/dnsmasq restart
 }
 
